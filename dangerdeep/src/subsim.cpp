@@ -31,6 +31,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <glu.h>
 #include <SDL.h>
 
+#include <dirent.h>
+
 #include "system.h"
 #include "vector3.h"
 #include "model.h"
@@ -159,7 +161,12 @@ class loadsavequit_dialogue : public widget
 	void save();
 	void erase();
 	void quit();
-	void cancel() { close(0); }	// return 0 for cancel/return, 1 for quit (if saving is enabled), 2 for loaded
+	void cancel() {
+	  if(mygame)
+	  {
+	    music::instance().switch_theme(music::PBT_CRUISE);
+	  }
+	 close(0); }	// return 0 for cancel/return, 1 for quit (if saving is enabled), 2 for loaded
 	void update_list();
 
 public:	
@@ -470,7 +477,10 @@ void run_game(auto_ptr<game> gm)
 //			if (state == game::mission_complete)
 
 			if (state == game::player_killed) {
-				music::instance().play_track(1, 500);
+				//music::instance().play_track(1, 500);
+				//unsigned menuloose = music::instance().get_menu_loose_track();
+				//music::instance().play_track(menuloose, 500);
+				music::instance().switch_theme(music::PBT_MENU_LOOSE);
 				widget w(0, 0, 1024, 768, "", 0, "killed.jpg");
 				widget_menu* wm = new widget_menu(0, 0, 400, 40, texts::get(103));
 				w.add_child(wm);
@@ -487,7 +497,10 @@ void run_game(auto_ptr<game> gm)
 			//if (q == 1)
 				break;
 		} else {
-			music::instance().play_track(1, 500);
+			//music::instance().play_track(1, 500);
+			//unsigned menuloose = music::instance().get_menu_loose_track();
+			//music::instance().play_track(menuloose, 500); // why menu loose ?
+			music::instance().switch_theme(music::PBT_MENU_LOOSE);
 			loadsavequit_dialogue dlg(gm.get());
 			int q = dlg.run(0, false);
 			// replace game and ui if new game was loaded
@@ -507,7 +520,10 @@ void run_game(auto_ptr<game> gm)
 			}
 			//replace ui after loading!!!!
 			if (q == 1){
-				music::instance().play_track(1, 500);
+				//music::instance().play_track(1, 500);
+				//unsigned menuloose = music::instance().get_menu_loose_track();
+				//music::instance().play_track(menuloose, 500);
+				music::instance().switch_theme(music::PBT_MENU_LOOSE);
 				break;
 			}
 			if( q == 0 ){
@@ -548,7 +564,10 @@ void run_game_editor(auto_ptr<game> gm)
 		/*game::run_state state =*/ game__exec(*gm, *ui);
 		gametheme = widget::replace_theme(tmp);
 
-		music::instance().play_track(1, 500);
+		//music::instance().play_track(1, 500);
+		//unsigned menuloose = music::instance().get_menu_loose_track();
+		//music::instance().play_track(menuloose, 500);
+		music::instance().switch_theme(music::PBT_MENU_LOOSE);
 		loadsavequit_dialogue dlg(gm.get());
 		int q = dlg.run(0, false);
 		// replace game and ui if new game was loaded
@@ -568,7 +587,10 @@ void run_game_editor(auto_ptr<game> gm)
 		}
 		//replace ui after loading!!!!
 		if (q == 1){
-			music::instance().play_track(1, 500);
+			//music::instance().play_track(1, 500);
+			//unsigned menuloose = music::instance().get_menu_loose_track();
+			//music::instance().play_track(menuloose, 500);
+			music::instance().switch_theme(music::PBT_MENU_LOOSE);
 			break;
 		}
 		if( q == 0 ){
@@ -2046,18 +2068,52 @@ int mymain(list<string>& args)
 	music::create_instance(new music(use_sound));
 	music::instance().start();
 
-	music::instance().append_track("ImInTheMood.ogg");
-	music::instance().append_track("Betty_Roche-Trouble_Trouble.ogg");
-	music::instance().append_track("theme.ogg");
-	music::instance().append_track("Auf_Feindfahrt_fast.ogg");
-	music::instance().append_track("outside_underwater.ogg");
-	music::instance().append_track("Auf_Feindfahrt_environmental.ogg");
-	music::instance().append_track("loopable_seasurface.ogg");
-	music::instance().append_track("loopable_seasurface_badweather.ogg");
-	music::instance().append_track("Auf_Feindfahrt.ogg");
+    // search for *.ogg music files
+    DIR* dir_music = opendir(get_music_dir().c_str());
+    if (!dir_music) {
+        log_warning("error opening music folder");
+    }
+    else
+    {
+        struct dirent* entry;
+        unsigned index = 0;
+        while ( (entry = readdir(dir_music)) != NULL) 
+        {
+            string filename = entry->d_name;
+            if(filename.substr(filename.find_last_of(".") + 1) == "ogg")
+            {
+                music::instance().append_track(filename);
+                log_debug("Track added: " << filename);
+                
+                // Rather ugly method, but has its own avantages                 
+                if(filename.find("menu-main-")==0)
+                  music::instance().reg_track(music::PBT_MENU_MAIN,index);
+                else if(filename.find("menu-win-")==0)
+                  music::instance().reg_track(music::PBT_MENU_WIN,index);
+                else if(filename.find("menu-loose-")==0)
+                  music::instance().reg_track(music::PBT_MENU_LOOSE,index);
+                else if(filename.find("chasing-")==0)
+                  music::instance().reg_track(music::PBT_CHASING,index);
+                else if(filename.find("attack-")==0)
+                  music::instance().reg_track(music::PBT_ATTACK,index);
+                else if(filename.find("escape-")==0)
+                  music::instance().reg_track(music::PBT_ESCAPE,index);
+                else //if(filename.find("cruise-")==0) // by default all other tracks
+                  music::instance().reg_track(music::PBT_CRUISE,index);
+                index++;
+            }
+        }
+
+        if (closedir(dir_music) == -1) {
+            log_warning("error closing music folder");
+        }
+    }
 	add_loading_screen("Music list loaded");
 	//music::instance().set_playback_mode(music::PBM_SHUFFLE_TRACK);
-	music::instance().play();
+	//music::instance().play();
+  //unsigned menu_main = music::instance().get_menu_main_track();
+	//music::instance().play_track(music::instance().get_menu_main_track(),500);
+	music::instance().switch_theme(music::PBT_MENU_MAIN);
 	
 	widget::set_theme(auto_ptr<widget::theme>(new widget::theme("widgetelements_menu.png", "widgeticons_menu.png",
 								    font_typenr16,

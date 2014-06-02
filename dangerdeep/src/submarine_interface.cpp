@@ -152,7 +152,7 @@ submarine_interface::submarine_interface(game& gm) :
 
 	// Important! call enter() here for current display.
 	displays[current_display]->enter(gm.is_day_mode());
-
+  music::instance().switch_theme(music::PBT_CRUISE);
 	add_loading_screen("submarine interface initialized");
 }
 
@@ -176,6 +176,7 @@ void submarine_interface::fire_tube(submarine* player, int nr)
 				oss << " " << texts::get(6) << ": " << player->get_target()->get_description(2);
 			mygame->add_logbook_entry(oss.str());
 			play_sound_effect(SFX_TUBE_LAUNCH, player->get_pos());
+			music::instance().switch_theme(music::PBT_ATTACK);
 		} else {
 			add_message(texts::get(138));
 		}
@@ -393,6 +394,7 @@ void submarine_interface::process_input(const SDL_Event& event)
 			add_message(texts::get(41));
 			mygame->add_logbook_entry(texts::get(41));
 			player->crash_dive();
+			music::instance().switch_theme(music::PBT_ESCAPE);
 		} else if (mycfg.getkey(KEY_GO_TO_SNORKEL_DEPTH).equal(event.key.keysym)) {
 			if (player->has_snorkel () ) {
 				player->dive_to_depth(unsigned(player->get_snorkel_depth()));
@@ -422,6 +424,7 @@ void submarine_interface::process_input(const SDL_Event& event)
 				oss << texts::get(79) << player->get_target()->get_description(2); // fixme
 				add_message( oss.str () );
 				mygame->add_logbook_entry(oss.str());
+				music::instance().switch_theme(music::PBT_CHASING);
 			} else {
 				add_message(texts::get(80));
 			}

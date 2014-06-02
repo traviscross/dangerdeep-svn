@@ -33,6 +33,7 @@ inline std::string get_texture_dir() { return get_data_dir() + "textures/"; }
 inline std::string get_font_dir() { return get_data_dir() + "fonts/"; }
 inline std::string get_model_dir() { return get_data_dir() + "models/"; }
 inline std::string get_sound_dir() { return get_data_dir() + "sounds/"; }
+inline std::string get_music_dir() { return get_data_dir() + "music/"; }
 inline std::string get_image_dir() { return get_data_dir() + "images/"; }
 inline std::string get_mission_dir() { return get_data_dir() + "missions/"; }
 inline std::string get_map_dir() { return get_data_dir() + "maps/"; }

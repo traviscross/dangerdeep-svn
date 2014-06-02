@@ -1,0 +1,13 @@
+You can add your personnal music in this folder.
+Only *.ogg files are accepted. Mp3 can 
+Depending on the prefix you can tag tracks with a specific theme.
+For the moment the following prefix are recognized:
+ - "chasing-"
+ - "attack-"
+ - "escape-"
+ - "cruise-"
+ - "menu-main-"
+ - "menu-win-" 
+ - "menu-loose-"
+Any track with no tag or unkonwn tag will automatically go to the "cruise-" category.
+

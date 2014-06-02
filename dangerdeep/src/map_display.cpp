@@ -557,9 +557,9 @@ void map_display::display(class game& gm) const
 	bool is_day_mode = gm.is_day_mode ();
 
 	if ( is_day_mode )
-		glClearColor ( 0.0f, 0.0f, 1.0f, 1.0f );
+		glClearColor ( 0.602f, 0.770f, 0.804f, 1.0f ); // maybe a little bit flashy
 	else
-		glClearColor ( 0.0f, 0.0f, 0.75f, 1.0f );
+		glClearColor ( 0.223f, 0.344f, 0.473f, 1.0f );
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	double max_view_dist = gm.get_max_view_distance();
@@ -574,17 +574,22 @@ void map_display::display(class game& gm) const
 	int lx = int(1024/delta)+2, ly = int(768/delta)+2;
 
 	// draw grid
+	colorf gridcolor;
+	if ( is_day_mode )
+		gridcolor = {0.552f, 0.720f, 0.754f};
+	else
+	  gridcolor = {0.203f, 0.324f, 0.453f};
 	if (mapzoom >= 0.01) {
-		colorf col(0.5, 0.5, 1);
 		for (int i = 0; i < lx; ++i) {
-			primitives::line(vector2f(sx, 0), vector2f(sx, 768), col).render();
+			primitives::line(vector2f(sx, 0), vector2f(sx, 768), gridcolor).render();
 			sx += delta;
 		}
 		for (int i = 0; i < ly; ++i) {
-			primitives::line(vector2f(0, sy), vector2f(1024, sy), col).render();
+			primitives::line(vector2f(0, sy), vector2f(1024, sy), gridcolor).render();
 			sy -= delta;
 		}
 	}
+	
 	// draw map
 	if(mapmode==0) {
 		glPushMatrix();
@@ -800,6 +805,53 @@ void map_display::display(class game& gm) const
 			}
 		}
 		edit_panel->draw();
+	}
+	
+	// draw scale
+	int posx = 20;
+	int posy = 700;
+  unsigned step;
+  
+  // fixme: find a more elegant solution (ex: a log based formula + round(0)x50 )
+  if     (mapzoom>1.1)      step = 50;
+  else if(mapzoom>0.7)      step = 100;
+  else if(mapzoom>0.35)     step = 250; 
+  else if(mapzoom>0.25)     step = 500;  
+  else if(mapzoom>0.1)      step = 1000;  
+  else if(mapzoom>0.04)     step = 2500; 
+  else if(mapzoom>0.02)     step = 5000;
+  else if(mapzoom>0.005)    step = 10000;
+  else if(mapzoom>0.002)    step = 25000;
+  else if(mapzoom>0.0015)   step = 50000;
+  else if(mapzoom>0.0007)   step = 100000;
+  else if(mapzoom>0.0003)   step = 250000;
+  else if(mapzoom>0.00015)  step = 500000;
+  else if(mapzoom>0.000075) step = 1000000;
+  else                      step = 2500000;
+  
+  unsigned drawstep = mapzoom*step;
+  
+  //printf("Scale step = %d\n", step);
+  //printf("mapzoom = %f\n", mapzoom);
+  const int scalebartickness = 8;
+  const int xmax = 300;
+	unsigned istep = 0;
+	font_vtremington10->print_wrapped(posx, posy-20, 50, 20, (step >=5000)?"0km":"0m", color(10,10,10));
+	while(posx < xmax)
+	{
+	  vector2f pb1(posx,posy);
+	  vector2f pb2(posx+drawstep,posy+scalebartickness);
+	  vector2f pw1(posx+(drawstep/2.0)+2,posy+2);
+	  vector2f pw2(posx+drawstep-2,posy+scalebartickness-2);
+	  primitives::quad(pb1, pb2, color::black()).render();
+	  primitives::quad(pw1, pw2, color::white()).render();
+	  istep+=step;
+    posx+= drawstep;
+	  char text[16];
+	  if(step >=5000) sprintf(text,"%dkm",istep/1000);
+	  else            sprintf(text,"%dm",istep);
+	  
+	  font_vtremington10->print_wrapped(posx, posy-20, 70, 20, text, color(10,10,10));
 	}
 
 	ui.draw_infopanel();

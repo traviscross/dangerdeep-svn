@@ -30,6 +30,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "keys.h"
 #include "cfg.h"
 #include "global_data.h"
+#include "font.h"
+#include "texts.h"
 #include <sstream>
 using namespace std;
 
@@ -113,6 +115,7 @@ void sub_ghg_display::process_input(class game& gm, const SDL_Event& event)
 
 void sub_ghg_display::display(class game& gm) const
 {
+  //printf("display ghg\n");
 	sys().prepare_2d_drawing();
 
 	// get hearing device angle from submarine, if it has one
@@ -131,8 +134,50 @@ void sub_ghg_display::display(class game& gm) const
 // 	vector<double> noise_strengths = gm.sonar_listen_ships(player, sonar_ang);
 // 	printf("noise strengths, global ang=%f, L=%f M=%f H=%f U=%f\n",
 // 	       sonar_ang.value(), noise_strengths[0], noise_strengths[1], noise_strengths[2], noise_strengths[3]);
+  ui.draw_infopanel();
+  
+  submarine* mysub = dynamic_cast<submarine*>(gm.get_player());
+  std::map<double, sonar_operator::contact> contacts = mysub->get_sonarman().get_contacts();
+  
+  std::map<double, std::string> notebook_contacts;
+  std::ostringstream note,comments;
+  
+  int posx = 780;
+  int posy = 100;
+  int i = 0;
+  const unsigned linespc = 42;
+  for (std::map<double, sonar_operator::contact>::iterator it=contacts.begin(); it!=contacts.end(); ++it)
+  {
+    note.str("");
+    note << texts::get(810+(int)it->second.type);
+    double strength = it->second.strength_dB;
+		//notebook_contacts.insert(std::pair<double, string>(strength,note.str().c_str()));
+		color ink = color(10,10,10);
+		ostringstream bearing("");
+		bearing << (int)it->first;
+		// get the text for the shiptype to write down
+		font_jphsl->print_wrapped(posx, posy+ linespc*i, 256-16, 20, texts::get(810+(int)it->second.type), ink);
+		font_jphsl->print_wrapped(posx+180, posy+ linespc*i, 50, 20, bearing.str().c_str(), ink);
+		
+		// fixme: modify this part to give additionnal info provided by the device
+		comments.str("");
+		printf("signal dB: %d\n",(int)strength);
+		// comment: very close, close, distant etc.
+		if(strength > 60)
+		  comments << texts::get(820);
+		else if(strength > 50)
+		  comments << texts::get(821);
+		else if(strength > 40)
+		  comments << texts::get(822);
+		else if(strength > 30)
+		  comments << texts::get(823);
+		else //if(strength > 100)
+		  comments << texts::get(823);
 
-	ui.draw_infopanel();
+		font_jphsl->print_wrapped(posx+20, posy+ linespc*i+20,256-16-20, 20, comments.str().c_str(), ink);
+		
+    i++;
+  }
 
 	sys().unprepare_2d_drawing();
 }

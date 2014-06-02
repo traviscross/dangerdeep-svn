@@ -32,6 +32,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <SDL.h>
 #include <SDL_mixer.h>
 
+#include <iostream>     // std::cout
+#include <algorithm>    // std::find
+#include <vector>       // std::vector
+
 using namespace std;
 
 #define SOUND_SPEC_FILENAME "sound-categories.data"
@@ -51,7 +55,8 @@ music::music(bool useit, unsigned sample_rate_)
 	  usersel_fadein(0),
 	  pbm(PBM_LOOP_LIST),
 	  stopped(true),
-	  current_machine_sfx(0)
+	  current_machine_sfx(0),
+	  current_theme(PBT_NONE)
 {
 	use_music = useit;
 }
@@ -146,7 +151,7 @@ void music::init()
 	if (Mix_ReserveChannels(nr_reserved_channels) < int(nr_reserved_channels))
 		throw error("could not reserve enough channels");
 
-#if 0
+//#if 0
 	// load sfx files
 	// fixme: later implement a cache!
 	try {
@@ -192,7 +197,7 @@ void music::init()
 		destructor();
 		throw;
 	}
-#endif
+//#endif
 }
 
 
@@ -337,7 +342,8 @@ void music::exec_append_track(const std::string& filename)
 {
 	if (!use_music) throw std::invalid_argument("no music support");
 
-	Mix_Music *tmp = Mix_LoadMUS(( get_sound_dir() +  filename).c_str());
+	//Mix_Music *tmp = Mix_LoadMUS(( get_sound_dir() +  filename).c_str());
+	Mix_Music *tmp = Mix_LoadMUS(( get_music_dir() +  filename).c_str());
 
 	if (0 == tmp) {
 		log_warning("Failed to load track: " << filename << ", " << Mix_GetError() );
@@ -442,7 +448,7 @@ void music::exec_track_finished()
 		return;
 	}
 	if (!stopped) {
-		switch (pbm) {
+		/*switch (pbm) {
 		case PBM_LOOP_LIST:
 			++current_track;
 			if (current_track >= playlist.size())
@@ -453,7 +459,8 @@ void music::exec_track_finished()
 		case PBM_SHUFFLE_TRACK:
 			current_track = rnd(playlist.size());
 			break;
-		}
+		}*/
+		current_track = get_next_track();
 		start_play_track(current_track, 0);
 	}
 }
@@ -582,3 +589,94 @@ void music::exec_pause_sfx(bool on)
 	else
 		Mix_Resume(-1);
 }
+
+
+
+bool music::reg_track(playback_theme theme,unsigned index)
+{
+    switch(theme)
+    {
+      case PBT_MENU_MAIN:   playlist_menu_main.push_back(index); break;
+      case PBT_MENU_WIN:    playlist_menu_win.push_back(index); break;
+      case PBT_MENU_LOOSE:  playlist_menu_loose.push_back(index); break;
+      case PBT_CHASING:     playlist_chasing.push_back(index); break;
+      case PBT_ATTACK:      playlist_attack.push_back(index); break;
+      case PBT_ESCAPE:      playlist_escape.push_back(index); break;
+      case PBT_CRUISE: 
+      default:  
+        playlist_cruise.push_back(index); break;        
+    }
+
+  return true;
+}
+
+bool music::switch_theme(playback_theme theme, bool playnow)
+{
+  if(theme != current_theme)
+  {
+    current_theme = theme;
+    if(playnow)
+    {
+      current_track = get_next_track();
+      log_info("Switching to theme [" << current_theme << "] playing track [" << current_track << "]");
+      play_track(current_track,500);    
+    }
+    else
+    {
+      log_info("Switching to theme [" << current_theme << "] (soft transition)");
+    }
+  }
+  return true;
+}
+
+
+
+unsigned music::get_next_track()
+{
+    std::vector<unsigned> * list = NULL;
+    switch(current_theme)
+    {
+      case PBT_MENU_MAIN:   list = &playlist_menu_main; break;
+      case PBT_MENU_WIN:    list = &playlist_menu_win; break;
+      case PBT_MENU_LOOSE:  list = &playlist_menu_loose; break;
+      case PBT_CHASING:     list = &playlist_chasing; break;
+      case PBT_ATTACK:      list = &playlist_attack; break;
+      case PBT_ESCAPE:      list = &playlist_escape; break;
+      case PBT_CRUISE: 
+      default:  
+        list = &playlist_cruise; break;        
+    }
+    
+    std::vector<unsigned>::iterator it;
+    if(list != NULL)
+      if(list->size()>0)
+      {
+        switch (pbm) 
+        {
+		      case PBM_LOOP_LIST:
+		        it = find(list->begin(),list->end(),current_track);
+		        if(it != list->end()) ++it;
+		        if(it != list->end())
+		        {
+		          return (*it);
+		        }
+		        else
+		        {
+		          return *(list->begin());
+		        }
+		        break;
+		      case PBM_LOOP_TRACK:
+		        return current_track;
+			      break;
+		      case PBM_SHUFFLE_TRACK:
+		        unsigned i = rnd(list->size());
+			      return list->at(i);
+			      break;
+		    }
+      }
+   return 0;
+}
+
+
+
+

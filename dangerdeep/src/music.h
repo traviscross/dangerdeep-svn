@@ -66,6 +66,17 @@ class music : public singleton<class music>, public thread
 		PBM_SHUFFLE_TRACK
 	};
 
+  enum playback_theme {
+		PBT_MENU_MAIN,
+		PBT_MENU_WIN,
+		PBT_MENU_LOOSE,
+		PBT_CHASING,
+		PBT_ATTACK,
+		PBT_ESCAPE,
+		PBT_CRUISE,
+		PBT_NONE
+	};
+
 	/// create music handler
 	music(bool use_music = true, unsigned sample_rate = 44100);
 
@@ -78,6 +89,18 @@ class music : public singleton<class music>, public thread
 	///@param filename - filename of track
 	///@returns true if command was successful
 	bool append_track(const std::string& filename);
+	
+	/// register a track of the main playlist as a part of a virtual theme playlist
+	///@param theme - theme where the track must be registered
+	///@param index - index of the track in the main playlist
+	///@returns true if command was successful
+  bool reg_track(playback_theme theme,unsigned index);
+  
+	/// Switch to a new virtual theme playlist track
+	///@param theme - theme to play
+	///@param playnow - true if the new theme must be play immediately
+	///@returns true if command was successful  
+  bool switch_theme(playback_theme theme, bool playnow = true);
 
 	/// set playback mode
 	///@param pbm - either loop list, loop track or shuffle tracks
@@ -119,6 +142,8 @@ class music : public singleton<class music>, public thread
         /// get number of currently played track
         ///@returns track or 0 on error
 	unsigned get_current_track();
+	
+	unsigned get_next_track();
 
         /// request if music plays
         ///@returns state or false on error
@@ -155,8 +180,18 @@ class music : public singleton<class music>, public thread
 	int usersel_next_track;
 	unsigned usersel_fadein;
 	playback_mode pbm;
+	playback_theme current_theme;
 	bool stopped;
 	std::vector<std::string> playlist;
+	std::vector<unsigned> playlist_menu_main;
+	std::vector<unsigned> playlist_menu_win;
+	std::vector<unsigned> playlist_menu_loose;
+	std::vector<unsigned> playlist_chasing;
+	std::vector<unsigned> playlist_attack;
+	std::vector<unsigned> playlist_escape;
+	std::vector<unsigned> playlist_cruise;
+
+	
 	// we can't use the ptrvector here, since Mix_Music ptrs must be freed with special function.
 	std::vector<Mix_Music*> musiclist;
 	message_queue command_queue;

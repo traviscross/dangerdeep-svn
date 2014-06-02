@@ -131,6 +131,13 @@ void sonar_operator::simulate(game& gm, double delta_t)
 // 			printf("sonar man sim, Peak of signal found at angle %f, strength %f, class %i\n",
 // 			       current_angle.value(), signal.first, sc);
 			add_contact(current_angle + sub_heading, contact(signal.first, sc));
+      char message[128];
+      //int dir = (double)(current_angle + sub_heading );
+      //sprintf(message, "Sonar contact at %d", dir);
+      sprintf(message, "Sonar contact at %d", (int)current_angle.value());
+			gm.add_logbook_entry(message);
+  
+
 // 			printf("all contacts now:\n");
 // 			for (std::map<double, contact>::iterator it = contacts.begin(); it != contacts.end(); ++it)
 // 				printf("angle %f class %i strength %f\n", it->first, it->second.type, it->second.strength_dB);

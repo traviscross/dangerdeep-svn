@@ -33,6 +33,29 @@ class game;
 class game_editor;
 class sea_object;
 
+struct handdraw_mark
+{
+  vector2 position;
+};
+
+struct handdraw_ruler
+{
+  vector2 start;
+  vector2 end;
+};
+struct handdraw_line
+{
+  vector2 start;
+  vector2 end;
+};
+
+struct handdraw_angle
+{
+  vector2 start;
+  vector2 end;
+  float angle; //computed only once
+};
+
 class map_display : public user_display
 {
 protected:
@@ -108,6 +131,10 @@ protected:
 
 private:
 	map_display();
+	std::vector<handdraw_mark> handdraw_marks;
+	std::vector<handdraw_ruler> handdraw_rulers;
+	std::vector<handdraw_line> handdraw_lines;
+	std::vector<handdraw_angle> handdraw_angles;
 
 public:
 	map_display(class user_interface& ui_);

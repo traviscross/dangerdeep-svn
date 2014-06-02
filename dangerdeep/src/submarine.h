@@ -344,6 +344,8 @@ public:
 	const std::string& get_torpedomanage_img_name() const { return torpedomanage_sidetopimg; }
 
 	virtual hearing_device_type get_hearing_device_type() const { return hearing_device; }
+	
+	virtual bool damage(const vector3& fromwhere, unsigned strength);
 };
 
 #endif

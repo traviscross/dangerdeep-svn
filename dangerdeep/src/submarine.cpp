@@ -20,6 +20,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // submarines
 // subsim (C)+(W) Thorsten Jordan. SEE LICENSE
 
+#include <iostream>
+
 #include "submarine.h"
 #include "model.h"
 #include "game.h"
@@ -302,6 +304,48 @@ submarine::submarine(game& gm_, const xml_elem& parent)
 			ballast_tank_capacity += tanks.back().get_volume();
 		}
 	}
+	
+	
+	// load the damageable-parts data
+	printf("LOADING PARTS\n");
+	if (parent.has_child("damageable-parts")) { // fixme: later all subs should have it!!
+	printf("DAMAGEABLE PARTS DETECTED\n");
+		xml_elem epart = parent.child("damageable-parts");
+		for (xml_elem::iterator it = epart.iterate("part"); !it.end(); it.next()) {
+		    // fixme: complete parts cstor with more complete data x,y,z, repairable y/n etc.
+		    float weakness = it.elem().attrf("weakness");
+		    
+    		part p;
+		    p.id = it.elem().attr("id").c_str();
+
+        // fixme: for testing purpose
+		    //p.status = 0.25; // low damage at start ! (for testing) should be 0 for all
+		    //p.damage = 0.25;
+		    //p.remainingtime = 60;
+		    //p.floodlevel = 0.25;
+		    
+		    p.strength = it.elem().attrf("weakness");
+		    p.repairtime = it.elem().attru("repairtime");
+
+        float x0 = it.elem().attrf("x0");
+        float y0 = it.elem().attrf("y0");
+        float z0 = it.elem().attrf("z0");
+        float x1 = it.elem().attrf("x1");
+        float y1 = it.elem().attrf("y1");
+        float z1 = it.elem().attrf("z1");
+        
+        p.p1 = {x0,y0,z0};
+        p.p2 = {x1,y1,z1};
+        
+        p.surfaced = (it.elem().attr("surfaced").find("true")!=std::string::npos);
+        p.repairable = (it.elem().attr("repairable").find("true")!=std::string::npos);
+        p.floodable = (it.elem().attr("floodable").find("true") != std::string::npos);
+        
+			parts.push_back(p);
+			printf("PART ADDED %s\n",it.elem().attr("id").c_str());
+		}
+	}
+	
 
 	diveplane_1_id = mymodel->get_object_id_by_name("diveplane_1");
 	diveplane_2_id = mymodel->get_object_id_by_name("diveplane_2");
@@ -1374,3 +1418,94 @@ double submarine::push_air_to_ballast_tanks(double amount_cbm)
 	}
 	return amount_cbm;
 }
+
+// redefinition from ship class
+/*override*/
+bool submarine::damage(const vector3& fromwhere, unsigned strength) {
+
+    if (invulnerable)
+		return false;
+
+	// fromwhere is real-world position of damage source.
+
+	// test code: determine which voxels are within damage diameter
+	// use a 10m radius, and torps have atm 100 hitpoints, so radius=strength/10
+	vector3 relpos = fromwhere - get_pos();
+	// rotate relative position to object space
+	vector3f objrelpos = orientation.conj().rotate(relpos);
+	log_debug("DAMAGE ON SUB! relpos="<<relpos << " objrelpos="<<objrelpos);
+	
+	vector<unsigned> voxlist = mymodel->get_voxels_within_sphere(objrelpos, strength/10.0);
+	for (unsigned j = 0; j < voxlist.size(); ++j) {
+		unsigned i = voxlist[j];
+		// set all damaged voxels to flooding state (mass > 0.05f)
+		flooded_mass[i] = 0.1f;
+	}
+
+/*
+	damage_status& where = midship_damage;//fixme
+	int dmg = int(where) + strength;
+	if (dmg > wrecked) where = wrecked; else where = damage_status(dmg);
+	// fixme:
+	if (gm.random() % 2 == 0) {
+		stern_damage = midship_damage = bow_damage = wrecked;
+		sink();
+		return true;
+	} else{
+		stern_damage = midship_damage = bow_damage = mediumdamage;
+		return false;
+	}
+*/
+	// fixme: apply deflection/protection (idea : sort pars by distance, then consume hit points in the same order)
+    // apply damages for each part
+	for (vector<part>::iterator it = parts.begin(); it != parts.end(); ++it) {
+        std::string id=	(*it).id;
+        vector3f p1 =   it->p1;
+        vector3f p2 =   it->p2;
+        
+        float weakness = it->strength ;		// weakness to shock waves (1.0 = normal, 0.1 very weak), damage factor
+		double status  = it->status;		// damage in percent, negative means part is not existent.
+		unsigned repairtime = it->repairtime;	// seconds
+		bool surfaced = it->surfaced;		// must sub be surfaced to repair this?
+		bool repairable = it->repairable;	// is repairable at sea?
+		bool floodable = it->floodable;		// does part leak when damaged?
+		// variable data
+		float damage = it->damage;		// 0-1, 1 wrecked, 0 ok
+		double remainingtime = it->remainingtime;;	// time until repair is completed
+		float floodlevel = it->floodlevel;	// how much water is inside (0-1, part of volume, 1 = full)
+		
+		// easy mode = no more than 20% damage per hit
+        it->status += 0.2;
+        it->floodlevel += 0.2;
+        it->remainingtime += 60;
+        std::cout << "["<< id <<"] status=" << it->status << " reptime=" << it->remainingtime << " floodlvl=" << it->floodlevel;
+        //vector3 relpos = fromwhere - (get_pos()+(p1+p2)/2.0);
+        vector3 relpos = fromwhere - (get_pos()+p1);
+        vector3f objrelpos = orientation.conj().rotate(relpos);
+        
+        float dist = sqrt(relpos.x*relpos.x + relpos.y*relpos.y + relpos.z*relpos.z);
+        float impact = strength/(dist*dist);
+        float realdmg = impact/(weakness+0.0001);
+        it->status = std::min(1.0, it->status+realdmg*100);
+        it->remainingtime += realdmg*10000;
+		
+		/*
+		
+		std::string id;		// id of part
+		vector3f p1, p2;	// corners of bounding box around part, p1 < p2
+					// coordinates in absolute values (meters)
+		float strength;		// weakness to shock waves (1.0 = normal, 0.1 very weak), damage factor
+		double status;		// damage in percent, negative means part is not existent.
+		unsigned repairtime;	// seconds
+		bool surfaced;		// must sub be surfaced to repair this?
+		bool repairable;	// is repairable at sea?
+		bool floodable;		// does part leak when damaged?
+		// variable data
+		float damage;		// 0-1, 1 wrecked, 0 ok
+		double remainingtime;	// time until repair is completed
+		float floodlevel;	// how much water is inside (0-1, part of volume, 1 = full)
+		*/
+	}
+    return false;
+}
+

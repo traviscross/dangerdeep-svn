@@ -100,7 +100,8 @@ void sub_damage_display::display_popup (int x, int y, const string& text, bool a
 	primitives::line(vector2f(x, y), vector2f(posx+width/2, posy+height/2), color::red()).render();
 
 	notepadsheet.get()->draw(posx, posy);
-	font_vtremington12->print_wrapped(posx+8, posy+45, 256-16, 20, text, color(0,0,128));
+	//font_vtremington12->print_wrapped(posx+8, posy+45, 256-16, 20, text, color(0,0,128));
+	font_vtremington10->print_wrapped(posx+8, posy+45, 256-16, 20, text, color(10,10,10));
 }
 
 void sub_damage_display::display ( class game& gm ) const
@@ -109,11 +110,47 @@ void sub_damage_display::display ( class game& gm ) const
 
 	int ydrawdiff = (damage_screen_background->get_height()-sub_damage_scheme_all->get_height())/2;
 	damage_screen_background->draw(0, 0);
+	
+	// real flood display // drawn behind scheme pict.
+  submarine* mysub = dynamic_cast<submarine*>(gm.get_player());
+  const vector<submarine::part>& parts = mysub->get_damage_status();
+
+	for (unsigned i = 0; i < parts.size(); ++i) {
+	  if(parts[i].floodable && parts[i].floodlevel>0.0)
+	  {
+        float realLength = 66.5;	  // ship/submarine real length in meters
+        float dispLength = 900;     // ship/submarine length on schema in pixels
+	      float scale = dispLength / realLength ; // (screen width - borders) / sub real size
+        float realPartHeight = abs(parts[i].p1.z - parts[i].p2.z);
+        float realFloodHeight = parts[i].floodlevel * realPartHeight;
+//        unsigned dispFloofHieght = realFloodHeight * scale;
+	      float dispCenterX = 1024.0 / 2.0;
+	      float dispCenterZ = 250.0;
+	      
+	      float dispX1 =  dispCenterX + scale* std::min(parts[i].p1.x,parts[i].p2.x) ;
+	      float dispX2 =  dispCenterX + scale* std::max(parts[i].p1.x,parts[i].p2.x) ;
+	      
+	      //float dispH2 =  dispCenterZ + scale* std::min(parts[i].p1.z,parts[i].p2.z) ;
+	      //float dispH1 =  dispH2 - scale * realFloodHeight;
+	      //float dispH1 =  dispCenterZ - scale* std::max(parts[i].p1.z,parts[i].p2.z) ;
+	      //float dispH2 =  dispH1 - scale * realFloodHeight;
+	      	      
+	      float dispZ1 =  dispCenterZ - scale* std::max(parts[i].p1.z,parts[i].p2.z) ;
+	      float dispZ2 =  dispCenterZ - scale* std::min(parts[i].p1.z,parts[i].p2.z) ;
+	      
+	      primitives::quad(vector2f(dispX1, dispZ1), vector2f(dispX2,dispZ2), color(200,200,200)).render();
+        primitives::quad(vector2f(dispX1, std::max(dispZ1,dispZ2)- scale * realFloodHeight), vector2f(dispX2,std::max(dispZ1,dispZ2)), color(57,88,121)).render();
+        
+        /*
+        primitives::quad(vector2f(0.0, 0.0), vector2f(5.0,5.0), color::yellow()).render();
+        primitives::quad(vector2f(100.0, 200.0), vector2f(105.0,205.0), color::green()).render();
+        */
+        
+      }
+  }
+		
 	sub_damage_scheme_all->draw(0, ydrawdiff);
 
-	submarine* mysub = dynamic_cast<submarine*>(gm.get_player());
-
-	const vector<submarine::part>& parts = mysub->get_damage_status();
 	for (unsigned i = 0; i < parts.size(); ++i) {
 		rect r = rect_data[i];
 			if (r.x == 0) continue;	// display test hack fixme
@@ -127,8 +164,18 @@ void sub_damage_display::display ( class game& gm ) const
 			else t = repairwrecked.get();
 			t->draw(x, y, 32, 32);
 		}
+		/*
+		// display flood level with gauge indicator 
+		int flood = (int)(32.0 * parts[i].floodlevel);
+		primitives::quad(vector2f(x+32+2-1, y-1), vector2f(x+32+2+8+1,y+32+1), color::black()).render();
+		primitives::quad(vector2f(x+32+2, y+32-flood), vector2f(x+32+2+8,y+32), color::blue()).render();
+		*/
+		
 	}
 	
+	
+	
+
 	// draw popup if mouse is over any part
 	for (unsigned i = 0; i < parts.size(); ++i) {
 		if (parts[i].status < 0) continue;	// part does not exist
@@ -148,18 +195,31 @@ void sub_damage_display::display ( class game& gm ) const
 				else if (parts[i].status < 1.00) damcat = 4;
 				else damcat = 5;
 			}
+		
 
 			// display basic information			
 			ostringstream dmgstr;
-			dmgstr	<< texts::get(400+i) << "\n"	// name
+			dmgstr	<< parts[i].id << "\n"	// name
+			//dmgstr	<< texts::get(400+i) << "\n"	// name
 				<< texts::get(165) << texts::get(130+damcat)
 				<< " (" << unsigned(round(100*parts[i].status)) << " "
 				<< texts::get(166) << ")\n";
 
 			// if part is damages, display repair information
 			if (damcat > 0) {
-				if (mysub->damage_schemes[i].repairable) {
+				/*if (mysub->damage_schemes[i].repairable) {
 					if (mysub->damage_schemes[i].surfaced) {
+						dmgstr << texts::get(168);
+					} else {
+						unsigned minutes = unsigned(round(parts[i].repairtime / 60.0));
+						dmgstr << texts::get(167) << "\n"
+						<< texts::get(170) << minutes << texts::get(minutes == 1 ? 171 : 172);
+					}
+				} else {
+					dmgstr << texts::get(169);
+				}*/
+				if (parts[i].repairable) {
+					if (parts[i].surfaced) {
 						dmgstr << texts::get(168);
 					} else {
 						unsigned minutes = unsigned(round(parts[i].repairtime / 60.0));
@@ -173,8 +233,11 @@ void sub_damage_display::display ( class game& gm ) const
 			
 			// display popup with all information. fixme automatic line breaks
 			display_popup(r.x+r.w/2, r.y+r.h/2, dmgstr.str(), atleft, atbottom);
+
+			//std::cout << dmgstr << std::endl;
 		}
 	}
+	
 
 	ui.draw_infopanel();
 
