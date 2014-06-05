@@ -83,7 +83,7 @@
 81;;;;;;;;;;
 82;;;;;;;;;;
 83;"Ship was sunk!";"Schiff versenkt!";"La nave è stata affondata!";"¡Barco hundido!";"Navire coulé !";"Loď byla potopena!";;"Schip gezonken!";"Gemi battı!";"Jednostka tonie!"
-84;"Convoy size";"Geleitgröße wählen: ";"Scegli la grandezza del convoglio";"Seleccionar tamaño del convoy";"Taille du convoi :";"Velikost konvoje";;"Konvooi grote";"Konvoy boyutu";"Wielkość konwoju"
+84;"Convoy size";"Geleitgröße wählen: ";"Grandezza del convoglio";"Tamaño del convoy";"Taille du convoi";"Velikost konvoje";;"Konvooi grote";"Konvoy boyutu";"Wielkość konwoju"
 85;"small";"klein";"piccolo";"pequeño";"petit";"malý";;"klein";"küçük";"mała"
 86;"medium";"mittel";"medio";"mediano";"moyen";"střední";;"medium";"orta";"średnia"
 87;"large";"groß";"grande";"grande";"grand";"velký";;"groot";"büyük";"duża"
@@ -163,7 +163,7 @@
 161;"More info";"Mehr Info";"More info";"More info";"Plus d'informations";"More info";"More info";"More info";"More info";"Więcej danych"
 162;"Choose photo";"Photo wählen:";"Click on photo to change it";"Click on photo to change it";"Cliquer sur la photo pour la changer";"Click on photo to change it";"Click on photo to change it";"Click on photo to change it";"Click on photo to change it";"Wybierz foto"
 163;"Flotilla location:";"Flotillenstützpunkt:";"Flotilla location:";"Flotilla location:";"Base de l'escadrille:";"Flotilla location:";"Flotilla location:";"Flotilla location:";"Flotilla location:";"Poożenie flotylli"
-164;"Flotilla #";"#. U-Bootsflotille";"Flotilla #";"Flotilla #";"Escadrille n°";"Flotilla #";"Flotilla #";"Flotilla #";"Flotilla #";"Flotylla #"
+164;"Flotilla #";"#. U-Bootsflotille";"Flotilla #";"Flotilla #";"Escadrille n°#";"Flotilla #";"Flotilla #";"Flotilla #";"Flotilla #";"Flotylla #"
 165;"Damage: ";"Schaden: ";"Danno: ";"Daño:";"Dommages :";"Poškození:";;"Schade";"Hasar:";"Uszkodzenia:"
 166;"percent";"Prozent";"percento";"porcentaje";"pourcent";"procent";;"procent";"yüzde";"procent"
 167;"Repair in progress.";"Reparatur wird ausgeführt.";"Riparazioni in corso.";"Reparación en curso";"Réparations en cours";"Opravy probíhají.";;"Bezig met repareren";"Onarım durumu";"Naprawy w toku."

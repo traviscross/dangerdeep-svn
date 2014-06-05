@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "system.h"
 #include "oglext/OglExt.h"
 #include "shader.h"
+#include "log.h"
 #include <SDL.h>
 #include <SDL_image.h>
 #include <sstream>
@@ -243,6 +244,8 @@ void font::print_c(int x, int y, const string& text, color col, bool with_shadow
 unsigned font::print_wrapped(int x, int y, unsigned w, unsigned lineheight, const string& text,
 			     color col, bool with_shadow, unsigned maxheight) const
 {
+	if (w == 0)
+    w = 0xffffffff;
 	shader->use();
 	shader->set_gl_texture(*character_texture, loc_tex, 0);
 	// loop over spaces
@@ -310,6 +313,11 @@ unsigned font::print_wrapped(int x, int y, unsigned w, unsigned lineheight, cons
 		}
 		if (textptr == textlen)
 			break;
+
+		if (textptr == oldtextptr) { // shouldn't be reached
+		  log_warning("font stuck at char ["<< char(text[textptr]) << "] !!! safety code activated to avoid infinite loop");
+		  ++textptr;
+		}
 	}
 	print_cache();
 	return textlen;
